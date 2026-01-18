@@ -1,0 +1,1530 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>AnonymousRB Premium</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+  <style>
+    :root{
+      --bg:#0a0a0a; --bg-rgb:10,10,10;
+      --card:#141414; --card-2:#101010;
+      --text:#ffffff; --text-dim:#8c8c8c;
+      --accent:#ffffff; --gold:#ffd700;
+      --brd:rgba(255,255,255,.10); --brd-2:rgba(255,255,255,.06);
+      --shadow: 0 18px 50px rgba(0,0,0,.35);
+      --soft-shadow: 0 10px 30px rgba(0,0,0,.22);
+      --radius-xl: 26px; --radius-lg: 20px; --radius-md: 14px;
+      --ease: cubic-bezier(.2,.8,.2,1);
+    }
+    .light-theme{
+      --bg:#f5f5f7; --bg-rgb:245,245,247;
+      --card:#ffffff; --card-2:#fbfbfd;
+      --text:#1d1d1f; --text-dim:#6e6e73;
+      --accent:#000000;
+      --brd:rgba(0,0,0,.07); --brd-2:rgba(0,0,0,.05);
+      --shadow: 0 18px 45px rgba(0,0,0,.10);
+      --soft-shadow: 0 10px 26px rgba(0,0,0,.10);
+    }
+
+    *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+    html,body{ height:100%; }
+    body{
+      margin:0; background:var(--bg); color:var(--text);
+      font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Helvetica Neue",Arial,sans-serif;
+      transition: background .35s var(--ease), color .35s var(--ease);
+      overflow:hidden;
+    }
+
+    /* ===== Icons ===== */
+    .icon{
+      width: 20px; height: 20px;
+      display:inline-block;
+      color: currentColor;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      flex: 0 0 auto;
+    }
+    .icon.s{ width: 18px; height: 18px; }
+    .icon.m{ width: 20px; height: 20px; }
+    .icon.l{ width: 22px; height: 22px; }
+    .icon.xl{ width: 26px; height: 26px; }
+    .icon-fill{ fill: currentColor; stroke:none; }
+
+    /* ===== Background with masks ===== */
+    .bg-wrap{
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      overflow: hidden;
+      background:
+        radial-gradient(900px 600px at 15% 10%, rgba(255,215,0,.08), transparent 60%),
+        radial-gradient(900px 600px at 85% 30%, rgba(255,255,255,.06), transparent 55%),
+        radial-gradient(900px 600px at 50% 100%, rgba(255,215,0,.05), transparent 62%),
+        linear-gradient(180deg, rgba(var(--bg-rgb),1) 0%, rgba(var(--bg-rgb),1) 60%, rgba(var(--bg-rgb),.92) 100%);
+      transition: background .35s var(--ease);
+    }
+    .bg-masks{ position:absolute; inset:0; }
+    .bg-mask{
+      position:absolute;
+      width: var(--size, 280px);
+      opacity: var(--op, .06);
+      filter: drop-shadow(0 18px 50px rgba(0,0,0,.25));
+      mix-blend-mode: soft-light;
+      transform: translate3d(0,0,0) rotate(var(--rot, 0deg));
+      animation: floaty var(--dur, 18s) var(--ease) infinite;
+      animation-delay: var(--delay, 0s);
+      will-change: transform;
+    }
+    .light-theme .bg-mask{
+      opacity: calc(var(--op, .06) + .03);
+      mix-blend-mode: multiply;
+      filter: drop-shadow(0 14px 40px rgba(0,0,0,.10));
+    }
+    @keyframes floaty{
+      0%{ transform: translate3d(0,0,0) rotate(var(--rot,0deg)) scale(var(--scale,1)); }
+      50%{ transform: translate3d(var(--dx,22px), var(--dy,-40px),0) rotate(calc(var(--rot,0deg) + 10deg)) scale(var(--scale,1)); }
+      100%{ transform: translate3d(0,0,0) rotate(var(--rot,0deg)) scale(var(--scale,1)); }
+    }
+    .bg-noise{
+      position:absolute;
+      inset:-40%;
+      opacity:.07;
+      background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");
+      mix-blend-mode: overlay;
+      animation: noiseMove 10s linear infinite;
+      transform: translate3d(0,0,0);
+    }
+    @keyframes noiseMove{
+      0%{ transform: translate3d(-3%, -2%, 0) }
+      50%{ transform: translate3d(2%, 3%, 0) }
+      100%{ transform: translate3d(-3%, -2%, 0) }
+    }
+
+    /* ===== Layout ===== */
+    .app-container{
+      position:relative;
+      z-index:1;
+      height:100vh;
+      display:flex;
+      flex-direction:column;
+      padding-bottom: 92px;
+    }
+    .header{
+      position:sticky;
+      top:0;
+      z-index:5;
+      padding:18px 18px 14px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      border-bottom: 1px solid var(--brd);
+      background: rgba(var(--bg-rgb), .72);
+      backdrop-filter: blur(18px);
+    }
+    .logo{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      font-size:16px;
+      font-weight:900;
+      letter-spacing:-.3px;
+    }
+    .logo-badge{
+      width:28px; height:28px;
+      border-radius:10px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      border:1px solid var(--brd);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), transparent);
+      box-shadow: var(--soft-shadow);
+      color: var(--gold);
+    }
+    .header-actions{ display:flex; gap:10px; }
+    .icon-btn{
+      width:40px; height:40px;
+      border-radius:14px;
+      border:1px solid var(--brd);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), transparent);
+      color:var(--text);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      cursor:pointer;
+      opacity:.92;
+      transition: transform .18s var(--ease), opacity .18s var(--ease), border-color .18s var(--ease);
+      user-select:none; -webkit-user-select:none;
+    }
+    .icon-btn:active{ transform:scale(.95); opacity:1; border-color: var(--brd-2); }
+
+    .page{
+      display:none;
+      flex:1;
+      padding:18px;
+      overflow-y:auto;
+      animation: slideUp .35s var(--ease);
+      scrollbar-width:none;
+    }
+    .page::-webkit-scrollbar{ width:0; height:0; }
+    .page.active{ display:block; }
+    @keyframes slideUp{ from{opacity:0; transform:translateY(14px)} to{opacity:1; transform:translateY(0)} }
+
+    .card{
+      background: linear-gradient(180deg, var(--card) 0%, var(--card-2) 100%);
+      border:1px solid var(--brd);
+      border-radius: 26px;
+      box-shadow: var(--shadow);
+    }
+
+    /* ===== Balance ===== */
+    .balance-card{
+      padding:26px 22px;
+      text-align:center;
+      margin-bottom:22px;
+      position:relative;
+      overflow:hidden;
+    }
+    .balance-card::before{
+      content:"";
+      position:absolute;
+      inset:-2px;
+      background:
+        radial-gradient(500px 200px at 20% 0%, rgba(255,215,0,.12), transparent 55%),
+        radial-gradient(500px 200px at 80% 0%, rgba(255,255,255,.10), transparent 55%);
+      opacity:.9;
+      pointer-events:none;
+    }
+    .balance-card>*{ position:relative; z-index:1; }
+    .bal-title{
+      font-size:11px;
+      color:var(--text-dim);
+      text-transform:uppercase;
+      letter-spacing:1.2px;
+      margin-bottom:8px;
+    }
+    .bal-amount{
+      font-size:44px;
+      line-height:1;
+      font-weight:900;
+      letter-spacing:-1px;
+      color:var(--gold);
+      text-shadow: 0 10px 40px rgba(255,215,0,.10);
+      margin:10px 0 14px;
+    }
+    .chip{
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      padding:9px 14px;
+      border-radius:999px;
+      border:1px solid var(--brd);
+      background: rgba(255,255,255,.04);
+      color:var(--text);
+      font-size:12px;
+      cursor:pointer;
+      opacity:.92;
+      user-select:none; -webkit-user-select:none;
+      transition: transform .18s var(--ease), opacity .18s var(--ease);
+    }
+    .chip:active{ transform:scale(.97); opacity:1; }
+
+    /* ===== Clicker ===== */
+    .clicker-section{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:18px;
+      padding-bottom: 6px;
+    }
+    .orb{
+      width:210px; height:210px;
+      border-radius:50%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      cursor:pointer;
+      position:relative;
+      background:
+        radial-gradient(120px 120px at 35% 25%, rgba(255,255,255,.10), transparent 60%),
+        radial-gradient(240px 240px at 50% 70%, rgba(255,215,0,.06), transparent 55%),
+        linear-gradient(180deg, var(--card) 0%, var(--card-2) 100%);
+      border:1px solid var(--brd);
+      box-shadow: 0 26px 70px rgba(0,0,0,.35);
+      transition: transform .10s ease, box-shadow .18s var(--ease), border-color .18s var(--ease);
+      user-select:none; -webkit-user-select:none;
+      transform: translate3d(0,0,0);
+    }
+    .orb::before{
+      content:"";
+      position:absolute;
+      inset:-10px;
+      border-radius:inherit;
+      background: radial-gradient(circle, rgba(255,255,255,.18), transparent 60%);
+      opacity:.25;
+      filter: blur(2px);
+      animation: pulse 2.4s var(--ease) infinite;
+      pointer-events:none;
+    }
+    @keyframes pulse{ 0%{transform:scale(.98);opacity:.18} 50%{transform:scale(1.04);opacity:.32} 100%{transform:scale(.98);opacity:.18} }
+    .orb:active{
+      transform: scale(.93);
+      box-shadow: 0 18px 55px rgba(0,0,0,.35), 0 0 42px rgba(255,255,255,.18);
+      border-color: rgba(255,255,255,.22);
+    }
+    .orb-mark{
+      font-size: 78px;
+      color: var(--gold);
+      text-shadow: 0 18px 60px rgba(255,215,0,.10);
+      transform: translateY(-2px);
+      user-select:none;
+    }
+
+    .ripple{
+      position:absolute;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.35);
+      transform: translate(-50%, -50%);
+      animation: ripple .55s ease-out forwards;
+      pointer-events:none;
+    }
+    @keyframes ripple{ from{width:0;height:0;opacity:.8} to{width:260px;height:260px;opacity:0} }
+    .floating-text{
+      position:fixed;
+      pointer-events:none;
+      font-weight:900;
+      color:var(--gold);
+      text-shadow: 0 10px 35px rgba(255,215,0,.14);
+      transform: translate(-50%,-50%);
+      animation: float .75s forwards;
+      z-index: 9;
+    }
+    @keyframes float{ 0%{transform:translate(-50%,-50%) translateY(0);opacity:1} 100%{transform:translate(-50%,-50%) translateY(-90px);opacity:0} }
+
+    /* ===== Premium Player ===== */
+    .player{
+      width:100%;
+      max-width:560px;
+      border-radius:24px;
+      padding:14px 14px 12px;
+      border:1px solid var(--brd);
+      background:
+        radial-gradient(600px 220px at 18% 0%, rgba(255,215,0,.10), transparent 55%),
+        radial-gradient(600px 220px at 82% 0%, rgba(255,255,255,.08), transparent 55%),
+        linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+      backdrop-filter: blur(16px);
+      box-shadow: 0 18px 55px rgba(0,0,0,.30);
+      position:relative;
+      overflow:hidden;
+    }
+    .player::before{
+      content:"";
+      position:absolute;
+      inset:-2px;
+      background: linear-gradient(180deg, rgba(255,255,255,.08), transparent 40%);
+      opacity:.55;
+      pointer-events:none;
+    }
+    .player-head{
+      position:relative;
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:12px;
+      margin-bottom:10px;
+    }
+    .player-title{
+      font-size:12px;
+      font-weight:900;
+      opacity:.9;
+      overflow:hidden;
+      white-space:nowrap;
+      text-overflow:ellipsis;
+      max-width: 70%;
+      cursor:pointer;
+      user-select:none;
+    }
+    .player-time{
+      display:flex;
+      gap:10px;
+      font-size:11px;
+      opacity:.65;
+      font-weight:900;
+      user-select:none;
+    }
+
+    .player-sub{
+      display:flex;
+      gap:10px;
+      margin-bottom:10px;
+    }
+    .album-select{
+      width:100%;
+      padding:11px 12px;
+      border-radius:16px;
+      border:1px solid var(--brd);
+      background: rgba(255,255,255,.03);
+      color:var(--text);
+      font-weight:900;
+      font-size:12px;
+      outline:none;
+      appearance:none;
+    }
+
+    .controls{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:12px;
+      margin-bottom:10px;
+    }
+    .btn{
+      width:46px; height:46px;
+      border-radius:16px;
+      border:1px solid var(--brd);
+      background: rgba(255,255,255,.04);
+      color:var(--text);
+      cursor:pointer;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      transition: transform .16s ease, opacity .16s ease, border-color .16s ease;
+      opacity:.95;
+      box-shadow: 0 10px 24px rgba(0,0,0,.18);
+      user-select:none; -webkit-user-select:none;
+    }
+    .btn:active{ transform:scale(.96); opacity:1; }
+    .btn.main{
+      width:52px; height:52px;
+      border-radius:18px;
+      border-color: rgba(255,255,255,.16);
+      background:
+        radial-gradient(120px 60px at 50% 20%, rgba(255,255,255,.14), transparent 60%),
+        linear-gradient(180deg, rgba(255,215,0,.18), rgba(255,255,255,.04));
+      box-shadow: 0 16px 40px rgba(0,0,0,.28), 0 0 40px rgba(255,215,0,.08);
+      position:relative;
+    }
+    .btn.main.loading{ pointer-events:none; opacity:.9; }
+    .btn.main.loading::after{
+      content:"";
+      position:absolute;
+      width:18px; height:18px;
+      border-radius:999px;
+      border:2px solid rgba(255,255,255,.25);
+      border-top-color: rgba(255,255,255,.85);
+      animation: spin 900ms linear infinite;
+    }
+    @keyframes spin{ from{transform:rotate(0)} to{transform:rotate(360deg)} }
+
+    .ux-row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:10px;
+    }
+    .ux-left,.ux-right{ display:flex; gap:10px; }
+
+    .mini{
+      width:40px; height:40px;
+      border-radius:14px;
+      border:1px solid var(--brd);
+      background: rgba(255,255,255,.04);
+      color:var(--text);
+      cursor:pointer;
+      display:flex; align-items:center; justify-content:center;
+      opacity:.92;
+      transition: transform .16s ease, opacity .16s ease, border-color .16s ease;
+      user-select:none; -webkit-user-select:none;
+    }
+    .mini:active{ transform:scale(.97); opacity:1; }
+    .mini.active{
+      border-color: rgba(255,215,0,.25);
+      box-shadow: 0 0 26px rgba(255,215,0,.07);
+      opacity:1;
+    }
+
+    .seek-row{ margin:8px 0 10px; }
+    .vol-row{ display:flex; align-items:center; gap:10px; margin-bottom:12px; opacity:.9; }
+    input[type="range"]{
+      width:100%;
+      -webkit-appearance:none; appearance:none;
+      height:6px; border-radius:999px;
+      outline:none;
+      background: linear-gradient(90deg, rgba(255,215,0,.90) var(--pct, 0%), rgba(255,255,255,.14) 0);
+      border:1px solid var(--brd);
+    }
+    input[type="range"]::-webkit-slider-thumb{
+      -webkit-appearance:none; appearance:none;
+      width:16px; height:16px; border-radius:50%;
+      background: var(--accent);
+      border:2px solid rgba(255,255,255,.18);
+      box-shadow: 0 10px 24px rgba(0,0,0,.25);
+    }
+
+    .tracks{
+      border:1px solid var(--brd);
+      border-radius:18px;
+      padding:12px;
+      background: rgba(255,255,255,.03);
+    }
+    .tracks-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+    }
+    .tracks-title{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      font-size:12px;
+      font-weight:900;
+      opacity:.88;
+    }
+    .tracks-body{
+      display:none;
+      margin-top:12px;
+      gap:10px;
+      flex-direction:column;
+    }
+    .track-row{
+      border:1px solid var(--brd);
+      border-radius:14px;
+      padding:10px;
+      background: rgba(255,255,255,.03);
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      cursor:pointer;
+      user-select:none;
+    }
+    .track-row.playing{ border-color: rgba(255,215,0,.25); background: rgba(255,215,0,.06); }
+    .track-name{
+      font-weight:900;
+      font-size:12px;
+      overflow:hidden;
+      white-space:nowrap;
+      text-overflow:ellipsis;
+      max-width:70%;
+    }
+    .track-meta{ font-size:11px; opacity:.55; font-weight:900; }
+
+    .spotify-wrap{
+      display:none;
+      border:1px solid var(--brd);
+      border-radius:18px;
+      overflow:hidden;
+      background: rgba(255,255,255,.03);
+      margin-top: 12px;
+    }
+    .spotify-iframe{ width:100%; height:152px; border:0; display:block; }
+    .spotify-actions{ padding:10px; border-top:1px solid var(--brd); }
+
+    .field{
+      width:100%;
+      padding:15px 14px;
+      border-radius:14px;
+      border:1px solid var(--brd);
+      background: rgba(255,255,255,.03);
+      color:var(--text);
+      font-size:16px;
+      outline:none;
+    }
+    .btn-main{
+      width:100%;
+      padding:15px 14px;
+      border-radius:14px;
+      border:1px solid var(--brd);
+      background: var(--accent);
+      color: var(--bg);
+      font-weight:900;
+      font-size:16px;
+      cursor:pointer;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+      user-select:none;
+    }
+    .btn-ghost{ background: rgba(255,255,255,.03); color: var(--text); }
+    .sub{ margin:0 0 14px; color:var(--text-dim); font-size:13px; line-height:1.35; }
+    h2{ margin:6px 0 14px; font-weight:900; letter-spacing:-.5px; display:flex; align-items:center; gap:10px; }
+
+    /* Nav */
+    .nav-bar{
+      position:fixed;
+      left:0; right:0; bottom:0;
+      height:82px;
+      z-index:10;
+      display:flex;
+      justify-content:space-around;
+      align-items:center;
+      padding-bottom: env(safe-area-inset-bottom);
+      border-top:1px solid var(--brd);
+      background: rgba(var(--bg-rgb), .75);
+      backdrop-filter: blur(18px);
+    }
+    .nav-item{
+      flex:1 1 0; max-width:90px;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:6px;
+      color:var(--text-dim);
+      text-decoration:none;
+      font-size:10px;
+      font-weight:900;
+      padding:10px 0 8px;
+      border-radius:18px;
+      transition: color .2s var(--ease), background .2s var(--ease), transform .18s var(--ease);
+      user-select:none;
+      margin: 0 4px;
+    }
+    .nav-item.active{ color:var(--accent); background: rgba(255,255,255,.04); }
+    .nav-item:active{ transform:scale(.98); }
+
+    .toast{
+      position:fixed;
+      left:50%;
+      bottom:98px;
+      transform: translateX(-50%);
+      background: rgba(var(--bg-rgb), .78);
+      border:1px solid var(--brd);
+      color:var(--text);
+      padding:10px 12px;
+      border-radius:999px;
+      backdrop-filter: blur(16px);
+      font-size:12px;
+      font-weight:900;
+      opacity:0;
+      pointer-events:none;
+      transition: opacity .22s var(--ease), transform .22s var(--ease);
+      z-index:20;
+      white-space:nowrap;
+    }
+    .toast.show{ opacity:1; transform: translateX(-50%) translateY(-6px); }
+  </style>
+</head>
+
+<body>
+  <!-- ICON SPRITE -->
+  <svg width="0" height="0" style="position:absolute; left:-9999px; top:-9999px;">
+    <!-- simple fleur icon (for buttons) -->
+    <symbol id="i-fleur" viewBox="0 0 24 24">
+      <path class="icon-fill" d="M12 2.05c-1.6 1.2-2.3 2.9-2.1 4.5.12 1 .62 1.8 1.32 2.45-1.67-.55-3.47-.25-4.77.95-1.4 1.3-1.5 3.2-.3 4.5.7.75 1.7 1.17 2.75 1.17-.9 1.23-.95 2.78.1 3.93.88.97 2.15 1.37 3 .7.85.67 2.12.27 3-.7 1.05-1.15 1-2.7.1-3.93 1.05 0 2.05-.42 2.75-1.17 1.2-1.3 1.1-3.2-.3-4.5-1.3-1.2-3.1-1.5-4.77-.95.7-.65 1.2-1.45 1.32-2.45.2-1.6-.5-3.3-2.1-4.5Z"/>
+      <path class="icon-fill" d="M11.1 17.1 9.05 18.2 12 22l2.95-3.8-2.05-1.1Z"/>
+    </symbol>
+
+    <symbol id="i-theme" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-9-9 7 7 0 0 0 9 9Z"/></symbol>
+    <symbol id="i-sound-on" viewBox="0 0 24 24">
+      <path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15.5 8.5a4 4 0 0 1 0 7"/><path d="M18.5 6.5a7 7 0 0 1 0 11"/>
+    </symbol>
+    <symbol id="i-sound-off" viewBox="0 0 24 24">
+      <path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M16 9l5 5"/><path d="M21 9l-5 5"/>
+    </symbol>
+
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1v-10.5Z"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 15v-5"/><path d="M12 19V9"/><path d="M16 19v-8"/></symbol>
+    <symbol id="i-wallet" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2H7a2 2 0 0 0 0 4h14v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/><path d="M21 11h-4"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><path d="M20 21a8 8 0 0 0-16 0"/><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><path d="M12 22a10 10 0 1 0-10-10 10 10 0 0 0 10 10Z"/><path d="M12 10v7"/><path d="M12 7h.01"/></symbol>
+
+    <symbol id="i-gift" viewBox="0 0 24 24"><path d="M20 12v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-9"/><path d="M3 8h18v4H3z"/><path d="M12 8v14"/><path d="M12 8h4a2 2 0 0 0 0-4c-2 0-4 4-4 4Z"/><path d="M12 8H8a2 2 0 0 1 0-4c2 0 4 4 4 4Z"/></symbol>
+    <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 5h5v5"/><path d="M10 14 19 5"/><path d="M19 14v5a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></symbol>
+
+    <symbol id="i-play" viewBox="0 0 24 24"><path class="icon-fill" d="M9 7.5v9l8-4.5-8-4.5Z"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24"><path d="M8 6v12"/><path d="M16 6v12"/></symbol>
+    <symbol id="i-prev" viewBox="0 0 24 24"><path d="M11 7v10l-7-5 7-5Z"/><path d="M20 7v10l-7-5 7-5Z"/></symbol>
+    <symbol id="i-next" viewBox="0 0 24 24"><path d="M13 7v10l7-5-7-5Z"/><path d="M4 7v10l7-5-7-5Z"/></symbol>
+    <symbol id="i-shuffle" viewBox="0 0 24 24"><path d="M16 3h5v5"/><path d="M21 3l-7 7"/><path d="M4 14l6 6"/><path d="M10 20H4v-6"/><path d="M16 21h5v-5"/><path d="M21 21l-7-7"/><path d="M4 10l6-6"/></symbol>
+    <symbol id="i-repeat" viewBox="0 0 24 24"><path d="M20 12a8 8 0 0 0-14-5"/><path d="M6 3v4h4"/><path d="M4 12a8 8 0 0 0 14 5"/><path d="M18 21v-4h-4"/></symbol>
+    <symbol id="i-vol-low" viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15 12a3 3 0 0 0-2-2.8"/></symbol>
+    <symbol id="i-vol-high" viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15.5 8.5a4 4 0 0 1 0 7"/><path d="M18.5 6.5a7 7 0 0 1 0 11"/></symbol>
+  </svg>
+
+  <!-- BACKGROUND -->
+  <div class="bg-wrap" aria-hidden="true">
+    <div class="bg-masks" id="bgMasks"></div>
+    <div class="bg-noise"></div>
+  </div>
+
+  <div class="app-container">
+    <div class="header">
+      <div class="logo">
+        <div class="logo-badge" title="AnonymousRB">⚜️</div>
+        <div>AnonymousRB <span style="color:var(--gold)">⚜️</span></div>
+      </div>
+
+      <div class="header-actions">
+        <button class="icon-btn" id="sfxBtn" onclick="toggleSfx()" aria-label="sfx">
+          <svg class="icon m" id="sfxIcon"><use href="#i-sound-on"></use></svg>
+        </button>
+        <button class="icon-btn" onclick="toggleTheme()" aria-label="theme">
+          <svg class="icon m"><use href="#i-theme"></use></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- HOME -->
+    <div id="home" class="page active">
+      <div class="balance-card card">
+        <div class="bal-title">Ваш капитал</div>
+        <div class="bal-amount" id="bal">0.000 R$</div>
+
+        <button class="chip" onclick="claimBonus()">
+          <svg class="icon s"><use href="#i-gift"></use></svg>
+          <span>Бонус</span>
+          <b style="color:var(--gold); font-weight:900;">0.7 R$</b>
+        </button>
+      </div>
+
+      <div class="clicker-section">
+        <div class="orb" id="orb" aria-label="clicker">
+          <div class="orb-mark">⚜️</div>
+        </div>
+
+        <!-- PLAYER -->
+        <div class="player" id="player">
+          <div class="player-head">
+            <div class="player-title" id="track-title" title="Нажми, чтобы открыть список">Lo-fi Session</div>
+            <div class="player-time">
+              <span id="curTime">0:00</span>
+              <span id="durTime">0:00</span>
+            </div>
+          </div>
+
+          <div class="player-sub">
+            <select class="album-select" id="albumSelect"></select>
+            <button class="btn" id="openAlbumBtn" onclick="openAlbumLink()" style="width:46px; height:46px; display:none;" title="Открыть источник">
+              <svg class="icon m"><use href="#i-external"></use></svg>
+            </button>
+          </div>
+
+          <div class="controls" id="nativeControls">
+            <button class="btn" onclick="prevT()" aria-label="prev">
+              <svg class="icon m"><use href="#i-prev"></use></svg>
+            </button>
+            <button class="btn main" id="playBtn" onclick="toggleM()" aria-label="play">
+              <svg class="icon m" id="playIcon" style="stroke:none; fill:currentColor;"><use href="#i-play"></use></svg>
+            </button>
+            <button class="btn" onclick="nextT()" aria-label="next">
+              <svg class="icon m"><use href="#i-next"></use></svg>
+            </button>
+          </div>
+
+          <div class="ux-row">
+            <div class="ux-left">
+              <button class="mini" id="shuffleBtn" onclick="toggleShuffle()" title="Shuffle">
+                <svg class="icon s"><use href="#i-shuffle"></use></svg>
+              </button>
+              <button class="mini" id="repeatBtn" onclick="toggleRepeat()" title="Repeat">
+                <svg class="icon s" id="repeatIcon"><use href="#i-repeat"></use></svg>
+              </button>
+            </div>
+            <div class="ux-right">
+              <button class="mini" onclick="toggleTracks()" title="Список">
+                <svg class="icon s"><use href="#i-list"></use></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="seek-row">
+            <input id="seek" type="range" min="0" max="1000" value="0" step="1" />
+          </div>
+
+          <div class="vol-row">
+            <svg class="icon s" style="opacity:.7;"><use href="#i-vol-low"></use></svg>
+            <input id="vol" type="range" min="0" max="1" step="0.01" value="0.5" />
+            <svg class="icon s" style="opacity:.7;"><use href="#i-vol-high"></use></svg>
+          </div>
+
+          <!-- Spotify Embed (optional) -->
+          <div class="spotify-wrap" id="spotifyWrap">
+            <iframe class="spotify-iframe" id="spotifyEmbed" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+            <div class="spotify-actions">
+              <button class="btn-main btn-ghost" onclick="openAlbumLink()">
+                <svg class="icon s"><use href="#i-external"></use></svg>
+                <span>Открыть</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="tracks">
+            <div class="tracks-head">
+              <div class="tracks-title">
+                <svg class="icon s"><use href="#i-fleur"></use></svg>
+                <span>Список треков</span>
+              </div>
+              <button class="mini" onclick="toggleTracks()" aria-label="toggle tracks">
+                <svg class="icon s"><use href="#i-plus"></use></svg>
+              </button>
+            </div>
+
+            <div class="tracks-body" id="tracksBody">
+              <div id="tracksList"></div>
+
+              <div style="height:8px;"></div>
+              <div class="tracks-title" style="opacity:.75;">
+                <svg class="icon s"><use href="#i-plus"></use></svg>
+                <span>Добавить свой mp3</span>
+              </div>
+
+              <div style="display:flex; flex-direction:column; gap:10px;">
+                <input class="field" id="tName" placeholder="Название трека">
+                <input class="field" id="tUrl" placeholder="Прямая ссылка на mp3 (https://...)">
+                <button class="btn-main" onclick="addTrack()">
+                  <svg class="icon s"><use href="#i-plus"></use></svg>
+                  <span>Добавить</span>
+                </button>
+              </div>
+
+              <div class="sub" style="margin-top:10px;">
+                Для встроенного плеера нужны прямые mp3 ссылки. Spotify/YouTube не проигрываются в audio.
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- TOP -->
+    <div id="top" class="page">
+      <h2><svg class="icon m"><use href="#i-chart"></use></svg><span>Лидеры</span></h2>
+      <p class="sub">Реальный топ смотри в боте (“🏆 Топ лидеров”).</p>
+      <div class="card" style="padding:14px; border-radius:18px;">
+        <div style="opacity:.8; font-weight:900;">⚜️ Открой “🏆 Топ лидеров” в чате бота</div>
+      </div>
+    </div>
+
+    <!-- WALLET -->
+    <div id="wallet" class="page">
+      <h2><svg class="icon m"><use href="#i-wallet"></use></svg><span>Вывод</span></h2>
+      <p class="sub">Минимум: <b>30 R$</b>. Укажи <b>ссылку на Roblox Gamepass</b>.</p>
+
+      <div style="margin-bottom:12px;">
+        <input class="field" type="number" id="w-amount" placeholder="Сумма R$" inputmode="decimal">
+      </div>
+      <div style="margin-bottom:10px;">
+        <input class="field" type="text" id="w-address" placeholder="https://www.roblox.com/game-pass/ID/NAME">
+      </div>
+
+      <button class="btn-main" onclick="sendWithdraw()">
+        <svg class="icon s"><use href="#i-external"></use></svg>
+        <span>Запросить выплату</span>
+      </button>
+
+      <p class="sub" style="margin-top:10px;">
+        Проверка ссылки идёт на стороне бота. Если ссылка неверная — заявка не примется.
+      </p>
+    </div>
+
+    <!-- PROFILE -->
+    <div id="profile" class="page">
+      <h2><svg class="icon m"><use href="#i-user"></use></svg><span>Профиль</span></h2>
+
+      <div class="card" style="padding:18px; border-radius:22px; margin-bottom:12px;">
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <div>Рефералы: <b id="ref-count">0</b></div>
+          <div>Буст: <b id="boost-val">+0%</b></div>
+          <div class="sub" style="margin:0;">Серверный профиль и заявки бот отправляет в чат.</div>
+        </div>
+      </div>
+
+      <button class="btn-main btn-ghost" onclick="askMe()">Показать профиль в чате</button>
+      <div style="height:10px;"></div>
+      <button class="btn-main btn-ghost" onclick="askMyWithdrawals()">Мои заявки в чате</button>
+      <div style="height:10px;"></div>
+      <button class="btn-main btn-ghost" onclick="copyRef()">Реферальная ссылка</button>
+    </div>
+
+    <!-- ABOUT -->
+    <div id="about" class="page">
+      <h2><svg class="icon m"><use href="#i-info"></use></svg><span>О проекте</span></h2>
+      <p class="sub">AnonymousRB — закрытая система активности и заработка R$ в Telegram WebApp.</p>
+
+      <div class="card" style="padding:16px; border-radius:22px; margin-bottom:12px;">
+        <div style="font-weight:900; margin-bottom:8px; display:flex; gap:10px; align-items:center;">
+          <span style="color:var(--gold)">⚜️</span> Плюсы
+        </div>
+        <div class="sub" style="margin:0;">
+          • Быстрый терминал: клики, музыка, вывод — в одном месте.<br>
+          • Защита от автоклика: лимиты + античит на боте.<br>
+          • Прозрачные правила: фиксированная награда и понятный вывод.<br>
+          • Фирменный стиль ⚜️ и атмосфера “закрытого клуба”.
+        </div>
+      </div>
+
+      <div class="card" style="padding:16px; border-radius:22px;">
+        <div style="font-weight:900; margin-bottom:8px;">Почему так назвали</div>
+        <div class="sub" style="margin:0;">
+          Anonymous — про приватность и стиль закрытой корпорации.<br>
+          RB — про Roblox/Robux (R$) и игровую направленность.
+        </div>
+      </div>
+    </div>
+
+    <!-- NAV -->
+    <nav class="nav-bar">
+      <a href="#" class="nav-item active" onclick="tab('home', this)">
+        <svg class="icon"><use href="#i-home"></use></svg>
+        Главная
+      </a>
+      <a href="#" class="nav-item" onclick="tab('top', this)">
+        <svg class="icon"><use href="#i-chart"></use></svg>
+        Топ
+      </a>
+      <a href="#" class="nav-item" onclick="tab('wallet', this)">
+        <svg class="icon"><use href="#i-wallet"></use></svg>
+        Вывод
+      </a>
+      <a href="#" class="nav-item" onclick="tab('profile', this)">
+        <svg class="icon"><use href="#i-user"></use></svg>
+        Профиль
+      </a>
+      <a href="#" class="nav-item" onclick="tab('about', this)">
+        <svg class="icon"><use href="#i-info"></use></svg>
+        О нас
+      </a>
+    </nav>
+  </div>
+
+  <div class="toast" id="toast">Готово</div>
+
+  <script>
+    // ===================== Session token =====================
+    const SESSION_TOKEN = new URLSearchParams(location.search).get("token") || "";
+
+    // ===================== Telegram init =====================
+    const tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
+    if (tg) { try { tg.expand(); } catch(e){} }
+
+    function syncHeaderColor(){
+      if (!tg) return;
+      const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
+      try { tg.headerColor = bg; } catch(e){}
+      try { if (tg.setHeaderColor) tg.setHeaderColor(bg); } catch(e){}
+    }
+    syncHeaderColor();
+
+    // ===================== Toast =====================
+    let toastTimer = null;
+    function showToast(text){
+      const t = document.getElementById('toast');
+      t.textContent = text;
+      t.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => t.classList.remove('show'), 1400);
+    }
+
+    // ===================== Masks background init =====================
+    const MASK_SRC = "222.png";
+    const masksConfig = [
+      { left: "-8%", top: "10%", size: 340, op: 0.06, dur: 22, delay: -2, rot: -12, dx: 18, dy: -38, scale: 1.0 },
+      { left: "62%", top: "-6%", size: 380, op: 0.05, dur: 26, delay: -6, rot:  10, dx: -22, dy:  46, scale: 1.05 },
+      { left: "78%", top: "52%", size: 300, op: 0.05, dur: 21, delay: -4, rot:  18, dx: -16, dy: -34, scale: 0.98 },
+      { left: "10%", top: "58%", size: 320, op: 0.05, dur: 24, delay: -9, rot: -18, dx:  20, dy:  42, scale: 1.02 },
+      { left: "36%", top: "26%", size: 280, op: 0.04, dur: 19, delay: -1, rot:   6, dx: -12, dy: -28, scale: 0.95 },
+    ];
+    (function initMasks(){
+      const bgMasks = document.getElementById("bgMasks");
+      if (!bgMasks) return;
+      bgMasks.innerHTML = "";
+      masksConfig.forEach((m) => {
+        const img = document.createElement("img");
+        img.className = "bg-mask";
+        img.src = MASK_SRC;
+        img.alt = "";
+        img.style.left = m.left;
+        img.style.top = m.top;
+        img.style.setProperty("--size", m.size + "px");
+        img.style.setProperty("--op", m.op);
+        img.style.setProperty("--dur", m.dur + "s");
+        img.style.setProperty("--delay", m.delay + "s");
+        img.style.setProperty("--rot", m.rot + "deg");
+        img.style.setProperty("--dx", m.dx + "px");
+        img.style.setProperty("--dy", m.dy + "px");
+        img.style.setProperty("--scale", m.scale);
+        bgMasks.appendChild(img);
+      });
+    })();
+
+    // ===================== Theme =====================
+    function toggleTheme(){
+      document.body.classList.toggle("light-theme");
+      syncHeaderColor();
+      SFX.click();
+      hapticLight();
+    }
+
+    function hapticLight(){
+      if (!tg?.HapticFeedback) return;
+      try { tg.HapticFeedback.impactOccurred('light'); } catch(e){}
+    }
+    function hapticSelect(){
+      if (!tg?.HapticFeedback) return;
+      try { tg.HapticFeedback.selectionChanged(); } catch(e){}
+    }
+
+    // ===================== Navigation =====================
+    function tab(id, el){
+      document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+      document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
+      document.getElementById(id).classList.add("active");
+      el.classList.add("active");
+      SFX.click();
+      hapticSelect();
+    }
+
+    // ===================== Bot send =====================
+    function sendToBot(payload){
+      if (!tg) return;
+      payload.token = SESSION_TOKEN;
+      try { tg.sendData(JSON.stringify(payload)); } catch(e){}
+    }
+
+    // ===================== SFX (pleasant, restored) =====================
+    const SFX = (() => {
+      let ctx = null;
+      let enabled = true;
+
+      function ensure(){
+        if (!enabled) return null;
+        if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+        if (ctx.state === "suspended") ctx.resume().catch(()=>{});
+        return ctx;
+      }
+
+      function tone({freq=600, dur=0.06, type="triangle", gain=0.08, lp=1400} = {}){
+        const c = ensure(); if (!c) return;
+        const o = c.createOscillator();
+        const g = c.createGain();
+        const f = c.createBiquadFilter();
+        f.type = "lowpass";
+        f.frequency.value = lp;
+
+        o.type = type;
+        o.frequency.setValueAtTime(freq, c.currentTime);
+
+        g.gain.setValueAtTime(0.0001, c.currentTime);
+        g.gain.exponentialRampToValueAtTime(gain, c.currentTime + 0.01);
+        g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + dur);
+
+        o.connect(f); f.connect(g); g.connect(c.destination);
+        o.start(); o.stop(c.currentTime + dur + 0.02);
+      }
+
+      function click(){ tone({freq:760, dur:0.045, type:"triangle", gain:0.06, lp:1800}); }
+      function coin(){
+        tone({freq:740, dur:0.06, type:"sine", gain:0.07, lp:2200});
+        setTimeout(()=>tone({freq:990, dur:0.05, type:"sine", gain:0.06, lp:2400}), 35);
+      }
+      function confirm(){
+        tone({freq:520, dur:0.07, type:"sine", gain:0.06, lp:1800});
+        setTimeout(()=>tone({freq:780, dur:0.07, type:"sine", gain:0.05, lp:2000}), 65);
+      }
+      function toggle(){ enabled = !enabled; return enabled; }
+
+      window.addEventListener("pointerdown", () => ensure(), { once:true });
+      return { click, coin, confirm, toggle };
+    })();
+
+    function toggleSfx(){
+      const on = SFX.toggle();
+      const use = document.querySelector("#sfxIcon use");
+      use.setAttribute("href", on ? "#i-sound-on" : "#i-sound-off");
+      if (on) SFX.click();
+      showToast(on ? "SFX включены" : "SFX выключены");
+      hapticLight();
+    }
+
+    // ===================== Clicker + batching =====================
+    let balance = 0.00;
+    const REWARD_PER_CLICK = 0.0013;
+
+    let pendingClicks = 0;
+    const CLICK_FLUSH_MS = 2000;
+    const CLICK_FLUSH_MAX = 30;
+
+    function flushClicks(reason="timer"){
+      if (pendingClicks <= 0) return;
+      sendToBot({ a: "click_batch", c: pendingClicks, r: reason, ts: Date.now() });
+      pendingClicks = 0;
+    }
+    setInterval(() => flushClicks("timer"), CLICK_FLUSH_MS);
+
+    // client flags (server is main)
+    const Anti = { last: 0, times: [], blockedUntil: 0, score: 0 };
+    const MIN_INTERVAL_MS = 70;
+    const MAX_CPS = 12;
+
+    function flag(reason, extra = {}){
+      Anti.score += 2;
+      sendToBot({ a: "anticheat", reason, score: Anti.score, ...extra, ts: Date.now() });
+      if (Anti.score >= 6) {
+        Anti.blockedUntil = Date.now() + 12000;
+        flushClicks("flag");
+        try { tg?.showAlert("Подозрительная активность. Начисления временно остановлены."); } catch(e){}
+      }
+    }
+    function cpsNow(){
+      const now = performance.now();
+      Anti.times = Anti.times.filter(t => now - t < 1000);
+      return Anti.times.length;
+    }
+    function intervalsVariance(arr){
+      if (arr.length < 6) return 999;
+      const ints = [];
+      for (let i=1;i<arr.length;i++) ints.push(arr[i]-arr[i-1]);
+      const avg = ints.reduce((a,b)=>a+b,0)/ints.length;
+      const v = ints.reduce((a,b)=>a+(b-avg)*(b-avg),0)/ints.length;
+      return v;
+    }
+
+    const orb = document.getElementById("orb");
+    const balEl = document.getElementById("bal");
+
+    orb.addEventListener("click", (e) => {
+      if (Date.now() < Anti.blockedUntil) return;
+      if (!e.isTrusted) { flag("untrusted_event"); return; }
+
+      const now = performance.now();
+      if (Anti.last && (now - Anti.last) < MIN_INTERVAL_MS) {
+        flag("too_fast", { dt: Math.round(now - Anti.last) });
+        return;
+      }
+      Anti.last = now;
+
+      Anti.times.push(now);
+      const cps = cpsNow();
+      if (cps > MAX_CPS) {
+        flag("cps_limit", { cps });
+        Anti.blockedUntil = Date.now() + 5000;
+        flushClicks("flag");
+        return;
+      }
+
+      const last12 = Anti.times.slice(-12);
+      const variance = intervalsVariance(last12);
+      if (last12.length >= 10 && variance < 8) {
+        flag("robotic_intervals", { variance: Number(variance.toFixed(2)) });
+        return;
+      }
+
+      balance += REWARD_PER_CLICK;
+      balEl.innerText = balance.toFixed(3) + " R$";
+
+      const r = document.createElement("div");
+      r.className = "ripple";
+      const rect = orb.getBoundingClientRect();
+      r.style.left = (e.clientX - rect.left) + "px";
+      r.style.top  = (e.clientY - rect.top) + "px";
+      orb.appendChild(r);
+      setTimeout(()=>r.remove(), 600);
+
+      const float = document.createElement("div");
+      float.className = "floating-text";
+      float.style.left = e.clientX + "px";
+      float.style.top  = e.clientY + "px";
+      float.innerText = "+" + REWARD_PER_CLICK.toFixed(4);
+      document.body.appendChild(float);
+      setTimeout(()=>float.remove(), 800);
+
+      pendingClicks += 1;
+      if (pendingClicks >= CLICK_FLUSH_MAX) flushClicks("max");
+
+      SFX.coin();
+      hapticSelect();
+    });
+
+    // ===================== Actions =====================
+    function looksLikeGamepass(url){
+      try{
+        const u = new URL(url);
+        if (!u.hostname.endsWith("roblox.com")) return false;
+        const p = u.pathname.toLowerCase();
+        const has = p.includes("/game-pass/") || p.includes("/gamepass/");
+        if (!has) return false;
+        const tail = p.includes("/game-pass/") ? p.split("/game-pass/")[1] : p.split("/gamepass/")[1];
+        const id = (tail.split("/")[0] || "").trim();
+        return /^\d+$/.test(id);
+      }catch(e){
+        return false;
+      }
+    }
+
+    function sendWithdraw(){
+      const amt = Number(document.getElementById("w-amount").value || 0);
+      const link = (document.getElementById("w-address").value || "").trim();
+
+      if (amt < 30) { showToast("Минимум 30 R$"); return; }
+      if (!link) { showToast("Вставь ссылку Gamepass"); return; }
+      if (!looksLikeGamepass(link)) { showToast("Похоже, это не Gamepass ссылка"); return; }
+
+      sendToBot({ a: "withdraw", amt, addr: link, ts: Date.now() });
+      try { tg?.sendData(`action:withdraw|amt:${amt}|addr:${link}|token:${SESSION_TOKEN}`); } catch(e){}
+      SFX.confirm(); hapticLight();
+      showToast("Заявка отправлена (ответ в чате)");
+    }
+
+    function claimBonus(){
+      sendToBot({ a: "daily_bonus", ts: Date.now() });
+      try { tg?.sendData(`action:daily_bonus|token:${SESSION_TOKEN}`); } catch(e){}
+      SFX.confirm(); hapticLight();
+      showToast("Запрос бонуса отправлен");
+    }
+
+    function copyRef(){
+      sendToBot({ a: "get_ref", ts: Date.now() });
+      try { tg?.sendData(`action:get_ref|token:${SESSION_TOKEN}`); } catch(e){}
+      SFX.click(); hapticLight();
+      showToast("Ссылка придёт в чат");
+    }
+
+    function askMe(){
+      sendToBot({ a: "me", ts: Date.now() });
+      SFX.click(); hapticLight();
+      showToast("Профиль придёт в чат");
+    }
+
+    function askMyWithdrawals(){
+      sendToBot({ a: "my_withdrawals", ts: Date.now() });
+      SFX.click(); hapticLight();
+      showToast("Заявки придут в чат");
+    }
+
+    // ===================== Music: albums + user playlist =====================
+    const playBtn = document.getElementById("playBtn");
+    const playIconUse = document.querySelector("#playIcon use");
+    const seek = document.getElementById("seek");
+    const vol = document.getElementById("vol");
+    const curTimeEl = document.getElementById("curTime");
+    const durTimeEl = document.getElementById("durTime");
+    const titleEl = document.getElementById("track-title");
+    const albumSelect = document.getElementById("albumSelect");
+    const openAlbumBtn = document.getElementById("openAlbumBtn");
+
+    const tracksBody = document.getElementById("tracksBody");
+    const tracksList = document.getElementById("tracksList");
+    const shuffleBtn = document.getElementById("shuffleBtn");
+    const repeatBtn = document.getElementById("repeatBtn");
+
+    const spotifyWrap = document.getElementById("spotifyWrap");
+    const spotifyEmbed = document.getElementById("spotifyEmbed");
+
+    // ТВОИ АЛЬБОМЫ (mp3 прямые ссылки) + spotify embed
+    const CURATED_ALBUMS = [
+      {
+        id: "a1",
+        title: "AnonymousRB — Album 1 (MP3)",
+        provider: "mp3",
+        link: "",
+        tracks: [
+          { name: "Track 01", url: "PUT_YOUR_DIRECT_MP3_URL_HERE_1" },
+          { name: "Track 02", url: "PUT_YOUR_DIRECT_MP3_URL_HERE_2" },
+        ]
+      },
+      {
+        id: "spotify",
+        title: "AnonymousRB — Spotify (Embed)",
+        provider: "spotify",
+        link: "https://open.spotify.com/album/ALBUM_ID_HERE",
+        embed: "https://open.spotify.com/embed/album/ALBUM_ID_HERE?utm_source=generator",
+        tracks: []
+      }
+    ];
+
+    let userPlaylist = [];
+    try { userPlaylist = JSON.parse(localStorage.getItem("playlist_v1") || "[]"); } catch(e){ userPlaylist = []; }
+
+    let playlist = [];
+    let curTrack = 0;
+    let isShuffle = JSON.parse(localStorage.getItem("shuffle_v1") || "false");
+    let repeatMode = Number(localStorage.getItem("repeat_v1") || "0"); // 0 off, 1 all, 2 one
+
+    let audio = new Audio();
+    audio.preload = "metadata";
+
+    const savedVol = Number(localStorage.getItem("vol_v1") || "0.5");
+    vol.value = String(Math.min(1, Math.max(0, savedVol)));
+    audio.volume = Number(vol.value);
+
+    let audioUnlocked = false;
+    function unlockAudioOnce(){
+      if (audioUnlocked) return;
+      audioUnlocked = true;
+      try{
+        audio.muted = true;
+        const p = audio.play();
+        if (p?.then) p.then(()=>{ audio.pause(); audio.currentTime=0; audio.muted=false; }).catch(()=>{ audio.muted=false; });
+        else audio.muted = false;
+      }catch(e){}
+    }
+    window.addEventListener("pointerdown", unlockAudioOnce, { once:true });
+
+    function fmtTime(sec){
+      if (!isFinite(sec)) return "0:00";
+      sec = Math.max(0, Math.floor(sec));
+      const m = Math.floor(sec / 60);
+      const s = sec % 60;
+      return `${m}:${String(s).padStart(2,"0")}`;
+    }
+    function setFill(el, value01){
+      const pct = Math.max(0, Math.min(1, value01)) * 100;
+      el.style.setProperty("--pct", pct + "%");
+    }
+    function setPlayState(isPlaying){
+      playIconUse.setAttribute("href", isPlaying ? "#i-pause" : "#i-play");
+    }
+    function setLoading(isLoading){
+      playBtn.classList.toggle("loading", !!isLoading);
+      document.getElementById("playIcon").style.opacity = isLoading ? "0" : "1";
+    }
+
+    function toggleTracks(){
+      const open = tracksBody.style.display === "flex";
+      tracksBody.style.display = open ? "none" : "flex";
+      SFX.click();
+      hapticLight();
+    }
+
+    function renderTracks(){
+      tracksList.innerHTML = "";
+      if (!playlist.length){
+        tracksList.innerHTML = `<div class="sub" style="margin:0;">Нет треков в этом альбоме.</div>`;
+        return;
+      }
+      playlist.forEach((t, i) => {
+        const row = document.createElement("div");
+        row.className = "track-row" + ((i === curTrack && audio.src) ? " playing" : "");
+        row.innerHTML = `<div class="track-name">${t.name || ("Track " + (i+1))}</div><div class="track-meta">${i+1}/${playlist.length}</div>`;
+        row.onclick = () => { setTrack(i); play(); };
+        tracksList.appendChild(row);
+      });
+    }
+
+    function buildAlbumOptions(){
+      albumSelect.innerHTML = "";
+      CURATED_ALBUMS.forEach(a => {
+        const opt = document.createElement("option");
+        opt.value = a.id;
+        opt.textContent = a.title;
+        albumSelect.appendChild(opt);
+      });
+      const optUser = document.createElement("option");
+      optUser.value = "__user__";
+      optUser.textContent = "User Playlist (MP3)";
+      albumSelect.appendChild(optUser);
+    }
+
+    function applyAlbum(id){
+      const a = (id === "__user__") ? { provider:"mp3", link:"", embed:"", tracks:userPlaylist } :
+        (CURATED_ALBUMS.find(x => x.id === id) || CURATED_ALBUMS[0]);
+
+      localStorage.setItem("active_album_v1", id);
+
+      // spotify mode
+      if (a.provider === "spotify") {
+        try { audio.pause(); } catch(e){}
+        audio.src = "";
+        setLoading(false);
+        setPlayState(false);
+
+        spotifyWrap.style.display = "block";
+        spotifyEmbed.src = a.embed || "";
+
+        // hide native list
+        playlist = [];
+        curTrack = 0;
+        openAlbumBtn.style.display = "flex";
+        openAlbumBtn.onclick = openAlbumLink;
+        titleEl.textContent = a.title;
+        curTimeEl.textContent = "0:00";
+        durTimeEl.textContent = "0:00";
+        seek.value = 0;
+        setFill(seek, 0);
+        renderTracks();
+        showToast("Spotify режим: управление в Embed");
+        return;
+      } else {
+        spotifyWrap.style.display = "none";
+        spotifyEmbed.src = "";
+      }
+
+      playlist = (Array.isArray(a.tracks) ? a.tracks : []).filter(t => /^https?:\/\//i.test(t?.url || ""));
+      openAlbumBtn.style.display = a.link ? "flex" : "none";
+      openAlbumBtn.onclick = openAlbumLink;
+
+      curTrack = 0;
+      audio.pause();
+      audio.src = "";
+      setLoading(false);
+      setPlayState(false);
+      titleEl.textContent = playlist[0]?.name || a.title || "Lo-fi Session";
+      curTimeEl.textContent = "0:00";
+      durTimeEl.textContent = "0:00";
+      seek.value = 0;
+      setFill(seek, 0);
+      renderTracks();
+    }
+
+    function openAlbumLink(){
+      const id = albumSelect.value;
+      const a = CURATED_ALBUMS.find(x => x.id === id);
+      const link = a?.link || (a?.provider === "spotify" ? a?.link : "");
+      if (!link) { showToast("Ссылка отсутствует"); return; }
+      try { tg?.openLink ? tg.openLink(link) : window.open(link, "_blank"); } catch(e){ window.open(link, "_blank"); }
+      SFX.click(); hapticLight();
+    }
+
+    function setTrack(i){
+      if (!playlist.length) return;
+      curTrack = (i + playlist.length) % playlist.length;
+      const t = playlist[curTrack];
+      audio.src = t.url;
+      titleEl.textContent = t.name || "Track";
+      curTimeEl.textContent = "0:00";
+      durTimeEl.textContent = "0:00";
+      seek.value = 0;
+      setFill(seek, 0);
+      renderTracks();
+    }
+
+    function nextIndex(){
+      if (!playlist.length) return 0;
+      if (repeatMode === 2) return curTrack;
+      if (isShuffle) return Math.floor(Math.random() * playlist.length);
+      return (curTrack + 1) % playlist.length;
+    }
+    function prevIndex(){
+      if (!playlist.length) return 0;
+      if (repeatMode === 2) return curTrack;
+      if (isShuffle) return Math.floor(Math.random() * playlist.length);
+      return (curTrack - 1 + playlist.length) % playlist.length;
+    }
+
+    function play(){
+      if (!playlist.length){ showToast("Нет треков"); return; }
+      unlockAudioOnce();
+      if (!audio.src) setTrack(curTrack);
+
+      setLoading(true);
+      audio.play().then(() => {
+        setLoading(false);
+        setPlayState(true);
+      }).catch(() => {
+        setLoading(false);
+        setPlayState(false);
+        showToast("Ошибка воспроизведения (mp3/https/CORS)");
+      });
+    }
+
+    function pause(){
+      audio.pause();
+      setPlayState(false);
+    }
+
+    function toggleM(){
+      if (!playlist.length){ showToast("Нет треков"); return; }
+      if (audio.paused) { play(); SFX.click(); }
+      else { pause(); SFX.click(); }
+      hapticLight();
+    }
+
+    function nextT(){ if (!playlist.length) return; setTrack(nextIndex()); play(); SFX.click(); hapticLight(); }
+    function prevT(){ if (!playlist.length) return; setTrack(prevIndex()); play(); SFX.click(); hapticLight(); }
+
+    function toggleShuffle(){
+      isShuffle = !isShuffle;
+      localStorage.setItem("shuffle_v1", JSON.stringify(isShuffle));
+      shuffleBtn.classList.toggle("active", isShuffle);
+      showToast(isShuffle ? "Shuffle: ON" : "Shuffle: OFF");
+      SFX.click(); hapticLight();
+    }
+
+    function toggleRepeat(){
+      repeatMode = (repeatMode + 1) % 3;
+      localStorage.setItem("repeat_v1", String(repeatMode));
+      repeatBtn.classList.toggle("active", repeatMode !== 0);
+
+      // repeatMode 2 show "1"
+      if (repeatMode === 2) {
+        repeatBtn.innerHTML = "<span style='font-weight:900'>1</span>";
+      } else {
+        repeatBtn.innerHTML = "<svg class='icon s'><use href='#i-repeat'></use></svg>";
+      }
+      showToast(repeatMode === 0 ? "Repeat: OFF" : (repeatMode === 1 ? "Repeat: ALL" : "Repeat: ONE"));
+      SFX.click(); hapticLight();
+    }
+
+    function setV(v){
+      audio.volume = Number(v);
+      localStorage.setItem("vol_v1", String(audio.volume));
+      setFill(vol, audio.volume);
+    }
+    vol.addEventListener("input", () => setV(vol.value));
+
+    audio.addEventListener("loadedmetadata", () => durTimeEl.textContent = fmtTime(audio.duration));
+    audio.addEventListener("timeupdate", () => {
+      if (!isFinite(audio.duration) || audio.duration <= 0) return;
+      const p = audio.currentTime / audio.duration;
+      seek.value = Math.round(p * 1000);
+      setFill(seek, p);
+      curTimeEl.textContent = fmtTime(audio.currentTime);
+    });
+    audio.addEventListener("ended", () => {
+      if (!playlist.length) return;
+      if (repeatMode === 0 && !isShuffle && curTrack === playlist.length - 1) { pause(); return; }
+      setTrack(nextIndex());
+      play();
+    });
+
+    seek.addEventListener("input", () => {
+      const p = Number(seek.value) / 1000;
+      setFill(seek, p);
+      if (isFinite(audio.duration) && audio.duration > 0) audio.currentTime = p * audio.duration;
+    });
+
+    function addTrack(){
+      const name = (document.getElementById("tName").value || "").trim();
+      const url  = (document.getElementById("tUrl").value || "").trim();
+      if (!name || !url){ showToast("Заполни имя и ссылку"); return; }
+      if (!/^https?:\/\/.+/i.test(url)){ showToast("Нужна https ссылка"); return; }
+
+      userPlaylist.push({ name, url });
+      localStorage.setItem("playlist_v1", JSON.stringify(userPlaylist));
+      document.getElementById("tName").value = "";
+      document.getElementById("tUrl").value = "";
+      showToast("Трек добавлен");
+      if (albumSelect.value === "__user__") applyAlbum("__user__");
+    }
+
+    // init albums
+    buildAlbumOptions();
+    const activeAlbum = localStorage.getItem("active_album_v1") || CURATED_ALBUMS[0].id;
+    albumSelect.value = activeAlbum;
+    applyAlbum(activeAlbum);
+    albumSelect.addEventListener("change", () => applyAlbum(albumSelect.value));
+
+    // initial fills
+    setFill(seek, 0);
+    setFill(vol, audio.volume);
+
+    // unload
+    window.addEventListener("beforeunload", () => {
+      flushClicks("unload");
+      sendToBot({ a: "sync_ui", bal_ui: Number(balance.toFixed(6)), ts: Date.now() });
+      try { tg?.sendData(`action:sync|bal:${balance.toFixed(3)}|token:${SESSION_TOKEN}`); } catch(e){}
+    });
+  </script>
+</body>
+</html>
